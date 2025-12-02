@@ -1,0 +1,10 @@
+[project]
+name = "advent-of-code-2025"
+description = "Advent of Code 2025"
+version = "0.0.0"
+authors = [
+    { name = "Keith Ma", email = "keithfma@gmail.com" }
+]
+dependencies = [
+    "ipython>=9.7.0",
+]
