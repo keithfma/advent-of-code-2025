@@ -1,10 +1,9 @@
-from math import log10, ceil
-from itertools import cycle, chain
+from math import log10
 from functools import lru_cache
 
 
 EXAMPLE = 'example.txt'
-REAL = 'input.txt.bak'
+REAL = 'input.txt'
 
 
 def parse_ranges(path: str) -> tuple[tuple[int, int]]:
@@ -36,7 +35,7 @@ def repeat(template: int, num_times: int) -> int:
     return result
 
 
-def next_larger_invalid_id(x: int, n: int) -> int:
+def next_value_with_n_repeats(x: int, n: int) -> int:
     """Return the next integer larger than x that is composed of a pattern which repeats n times"""
     nx = num_digits(x)
     np, rem = divmod(nx, n)
@@ -45,16 +44,22 @@ def next_larger_invalid_id(x: int, n: int) -> int:
         #   n parts must have an extra digit
         pattern = 10**np
     else:
-        # the input number divides into n parts evenly, take the first digits as the patter
+        # the input number divides into n parts evenly, take the first digits as the pattern
         pattern = x // 10 ** (nx - np)
 
     y = repeat(pattern, n)
     if y <= x: 
         y = repeat(pattern + 1, n)
 
-    # print(f'{x=}, {n=}, {nx=}, {np=}, {pattern=}, {y=}')
-
     return y
+
+
+def next_value_with_at_least_2_repeats(x: int) -> int:
+    """Return the next integer larger than x that is composed of a pattern which repeats >=2 times"""
+    result = float('inf')    
+    for n in range(2, num_digits(x) + 2):  # minimum of 2 repeats, maximum of num_digits + 1
+        result = min(result, next_value_with_n_repeats(x, n))
+    return result
 
 
 def part_1(ranges: tuple[tuple[int, int]]):
@@ -63,17 +68,27 @@ def part_1(ranges: tuple[tuple[int, int]]):
     """
     total = 0
     for first, last in ranges:
-
         current = first - 1
-        
-        while (current := next_larger_invalid_id(current, 2)) <= last:
+        while (current := next_value_with_n_repeats(current, n=2)) <= last:
             total += current
-    
     return total
 
 
+def part_2(ranges: tuple[tuple[int, int]]):
+    """Return sum of invalid IDs in all input ranges
+    IDs are invalid if they consist of the same integer repeated *at least* 2x
+    """
+    total = 0
+    for first, last in ranges:
+        current = first - 1
+        while (current := next_value_with_at_least_2_repeats(current)) <= last:
+            total += current
+    return total
+    
+
 if __name__ == '__main__':
 
-    ranges = parse_ranges(REAL)
     # ranges = parse_ranges(EXAMPLE)
+    ranges = parse_ranges(REAL)
     print(f'Part 1: {part_1(ranges)}')
+    print(f'Part 2: {part_2(ranges)}')
