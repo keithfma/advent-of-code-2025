@@ -16,7 +16,6 @@ def parse(path) -> tuple[list[Range], list[int]]:
             txt = line.strip()
             if txt:
                 try:
-                    print(txt.split('-'))
                     a, b = txt.split('-')
                     ranges.append((int(a), int(b)))
                 except Exception:
@@ -50,7 +49,7 @@ def count_fresh(ranges: list[Range], ids: list[int]) -> int:
     Approach is to consolidate and sort the ranges and sort the ids, then march forward
         over both lists together to find ids that are in ranges without always looping over all ranges.
 
-    This is needlessly fancy, but fun!
+    This is needlessly fancy given the number of IDs and ranges, but fun!
     """
 
     ranges = consolidate(ranges)
@@ -90,8 +89,18 @@ def count_fresh(ranges: list[Range], ids: list[int]) -> int:
     return count
 
 
+def count_unique_fresh_ids(ranges: list[Range]) -> int:
+    """Return the number of possible fresh IDs (i.e., how many unique IDs are within any range)"""
+    ranges = consolidate(ranges)  # we know these are non-overlapping
+    count = 0
+    for r in ranges:
+        count += r[1] - r[0] + 1
+    return count
+
+
 if __name__ == '__main__':
 
     ranges, ids = parse(EXAMPLE)
     ranges, ids = parse(REAL)
     print(f'Part 1: {count_fresh(ranges, ids)}')
+    print(f'Part 2: {count_unique_fresh_ids(ranges)}')
