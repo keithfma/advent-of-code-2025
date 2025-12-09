@@ -1,5 +1,5 @@
 from scipy.spatial import KDTree
-from networkx import Graph, connected_components
+from networkx import Graph, connected_components, is_connected
 import numpy as np
 from operator import attrgetter
 from dataclasses import dataclass, replace
@@ -33,9 +33,6 @@ class NbrInfo:
 
 def connect_n(p: list[Point], n: int) -> int:
     """Connect the N closest pairs of points, and return the product of the size of the 3 largest circiuts that result"""
-    # use index to refer to each node
-    nodes = np.arange(len(p))
-
     # initialize the list of nearest neighbors 
     nbrs: list[NbrInfo] = []
     t = KDTree(p)
@@ -62,12 +59,39 @@ def connect_n(p: list[Point], n: int) -> int:
     return total
 
 
+def connect_all(p: list[Point]) -> int:
+    """Connect the closest pairs of points until the graph is fully connected, and return the silly number requested"""
+    # initialize the list of nearest neighbors 
+    nbrs: list[NbrInfo] = []
+    t = KDTree(p)
+    # note: k=[2] selects the *2nd* nearest neighbor, since 1st nearest is self 
+    distances, nbr_indexes = (arr.squeeze() for arr in t.query(t.data, k=[2]))
+    for self_idx, (distance, nbr_idx) in enumerate(zip(distances, nbr_indexes)):
+        nbrs.append(NbrInfo(self_idx, int(nbr_idx), float(distance), 2))
+
+    # build graph one edge at a time, finding the next-nearest-neighbor each time we consume an edge
+    g = Graph()
+    while g.number_of_nodes() < len(p) or not is_connected(g):
+        shortest = min(nbrs, key=attrgetter('distance'))
+        # add the edge
+        g.add_edge(shortest.self_idx, shortest.nbr_idx)
+        # print(f'connected: {is_connected(g)}, {shortest=}')
+        # find the next nearest neighbor for that node
+        next_dist, next_idx = (arr.squeeze() for arr in t.query(t.data[shortest.self_idx, :], k=[shortest.nth_nearest + 1]))
+        nbrs[shortest.self_idx] = replace(shortest, nbr_idx=int(next_idx), distance=float(next_dist), nth_nearest=shortest.nth_nearest + 1)
+
+    # compute product of the x coordinates of the nodes in the last edge
+    return p[shortest.self_idx][0] * p[shortest.nbr_idx][0]
+
+
 if __name__ == '__main__':
 
     print('Example')
     points = parse(EXAMPLE)
     print(f'Part 1: {connect_n(points, n=10)}')
+    print(f'Part 2: {connect_all(points)}')
 
     print('Real')
     points = parse(REAL)
     print(f'Part 1: {connect_n(points, n=1000)}')
+    print(f'Part 2: {connect_all(points)}')
